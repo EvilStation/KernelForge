@@ -1,6 +1,8 @@
 .vscode/
-build/
-bpf_loader
-kernel_compiler
-KernelForge
-kf.ui
+/build/
+/bpf_loader
+/kernel_compiler
+/KernelForge
+/kf.ui
+/include/bpf_trace.skel.h
+/include/vmlinux.h
