@@ -1,12 +1,12 @@
 .PHONY: all install clean
 
 UI_C	:= blueprint-compiler
-SRC		:= kf.ui
-TRGT 	:= kf.xml
+SRC		:= kf.blp
+TRGT 	:= kf.ui
 
 all: install
 
-%.xml : %.ui
+%.ui : %.blp
 	$(UI_C) compile $^ > $@
 
 install: $(TRGT)

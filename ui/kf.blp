@@ -1,0 +1,139 @@
+using Gtk 4.0;
+using Adw 1;
+
+Adw.ApplicationWindow MainWindow {
+  default-width: 800;
+  default-height: 600;
+  title: "KernelForge";
+
+  Adw.ToolbarView {
+    
+    [top]
+    Adw.HeaderBar {
+      title-widget: Adw.ViewSwitcher {
+        stack: main_stack;
+      };
+    }
+
+    Adw.ViewStack main_stack {
+
+      Adw.ViewStackPage {
+        name: "kernels";
+        title: "Система";
+        icon-name: "computer-symbolic";
+
+        child: Adw.NavigationSplitView {
+          sidebar: Adw.NavigationPage kernel_sidebar {
+            title: "kernel_sidebar";
+            Box kernel_box {
+              Label {
+                label: "<b>Список ядер</b>";
+                use-markup: true;
+                margin-top: 10;
+                margin-bottom: 15;
+              }
+              orientation: vertical;
+            }
+          };
+          content: Adw.NavigationPage kernel_content{
+            title: "kernel_content";
+            Adw.ViewStack kernel_stack {}
+          };
+        };
+      }
+
+      Adw.ViewStackPage {
+        name: "optimization";
+        title: "Мониторинг";
+        icon-name: "speedometer-symbolic";
+        child: Label {
+          label: "This is Page 2";
+        };
+      }
+
+      Adw.ViewStackPage {
+        name: "new_kernel";
+        title: "Новое ядро";
+        icon-name: "list-add-symbolic";
+        child: Adw.PreferencesPage {
+
+          
+          Adw.PreferencesGroup {
+            title: "Компоненты";
+            description: "укажите подсистемы, которые будут включены в ядро";
+            CheckButton kvm_check_button {
+              label: "KVM";
+            }
+            CheckButton selinux_check_button {
+              label: "SELinux";
+            }
+            CheckButton aa_check_button {
+              label: "AppArmor";
+            }
+          }
+
+          Adw.PreferencesGroup {
+            title: "Формат";
+            description: "укажите формат выходного файла ядра";
+            Adw.ComboRow kernel_format {
+              title: "Формат ядра";
+              model: StringList {
+                  strings: ["EFI Stub", "Unified Kernel Image (UKI)"];
+              };
+            }
+          }
+
+          Adw.PreferencesGroup {
+            title: "Оптимизация";
+            description: "укажите дополнительные опции мониторинга и оптимизации, которые будут доступны для этого ядра после сборки";
+            Adw.SwitchRow kernel_module_perf {
+              title: "Мониторинг модулей";
+              subtitle: "мониторинг и оптимизация работы модулей ядра";
+            }
+          }
+
+          Adw.PreferencesGroup {
+            Button start_button{
+              label: "начать";
+            }
+          }
+        };
+      }
+    }
+  }
+}
+
+Adw.Dialog build_dialog {
+  title: "Прогресс сборки:";
+  can-close: false;
+  width-request: 600;
+  Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      show-end-title-buttons: true;
+    }
+    Box {
+      orientation: vertical;
+      spacing: 12;
+      margin-top: 12;
+      margin-bottom: 12;
+      margin-start: 12;
+      margin-end: 12;
+
+      ProgressBar {
+        name: "build_progress";
+        fraction: 0.0;
+      }
+      ScrolledWindow {
+        hexpand: true;
+        vexpand: true;
+        min-content-height: 200;
+        TextView compilation_view {
+          editable: false;
+          monospace: true;
+          wrap-mode: word;
+        }
+      }
+    }
+  }
+}

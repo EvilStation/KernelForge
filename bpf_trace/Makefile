@@ -6,7 +6,7 @@ BUILD_DIR	:= ../build/
 CC		   	:= clang
 BPF_SRC		:= $(wildcard *.bpf.c)
 BPF_OBJ		:= $(patsubst %.bpf.c, $(BUILD_DIR)%.bpf.o, $(BPF_SRC))
-LDR_SRC		:= $(wildcard *.c)
+LDR_SRC		:= bpf_loader.c
 BPF_TRGT   	:= bpf_loader
 
 BPF_SKEL_H 	:= $(INC_DIR)bpf_trace.skel.h
