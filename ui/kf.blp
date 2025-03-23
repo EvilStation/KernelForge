@@ -61,14 +61,14 @@ Adw.ApplicationWindow MainWindow {
           Adw.PreferencesGroup {
             title: "Компоненты";
             description: "укажите подсистемы, которые будут включены в ядро";
-            CheckButton kvm_check_button {
-              label: "KVM";
+            CheckButton virt_check_button {
+              label: "Виртуализация";
             }
-            CheckButton selinux_check_button {
-              label: "SELinux";
+            CheckButton sec_check_button {
+              label: "Безопасность";
             }
-            CheckButton aa_check_button {
-              label: "AppArmor";
+            CheckButton perf_check_button {
+              label: "Производительность и отладка";
             }
           }
 

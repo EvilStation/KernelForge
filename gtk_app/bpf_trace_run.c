@@ -1,4 +1,3 @@
-#define KERNEL_FORMAT_ARR
 #include "gtk_app.h"
 #include <bpf/libbpf.h>
 #include <bpf/bpf.h>

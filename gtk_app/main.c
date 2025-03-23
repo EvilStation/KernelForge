@@ -1,5 +1,7 @@
 #include "gtk_app.h"
 
+GenKernelData2 *gen_kernel_data2 = NULL;
+
 static void
 on_kernel_button_clicked(GtkButton *button, GtkStack *stack)
 {
@@ -15,48 +17,60 @@ on_start_button_clicked(GtkButton *button, BuildDialogData *build_dialog_data)
 
   GenKernelData gen_kernel_data;
 
-  GObject *kvm_check_button = gtk_builder_get_object(builder, "kvm_check_button");
-  GObject *selinux_check_button = gtk_builder_get_object(builder, "selinux_check_button");
-  GObject *aa_check_button = gtk_builder_get_object(builder, "aa_check_button");
-  gen_kernel_data.kvm_inc_status = gtk_check_button_get_active(GTK_CHECK_BUTTON(kvm_check_button));
-  gen_kernel_data.selinux_inc_status = gtk_check_button_get_active(GTK_CHECK_BUTTON(selinux_check_button));
-  gen_kernel_data.aa_inc_status = gtk_check_button_get_active(GTK_CHECK_BUTTON(aa_check_button));
+  GObject *virt_check_button = gtk_builder_get_object(builder, "virt_check_button");
+  GObject *sec_check_button = gtk_builder_get_object(builder, "sec_check_button");
+  GObject *perf_check_button = gtk_builder_get_object(builder, "perf_check_button");
+  gen_kernel_data.virt_status = gtk_check_button_get_active(GTK_CHECK_BUTTON(virt_check_button));
+  gen_kernel_data.sec_status = gtk_check_button_get_active(GTK_CHECK_BUTTON(sec_check_button));
+  gen_kernel_data.perf_status = gtk_check_button_get_active(GTK_CHECK_BUTTON(perf_check_button));
 
   GObject *kernel_format = gtk_builder_get_object(builder, "kernel_format");
   gen_kernel_data.kernel_format = adw_combo_row_get_selected(ADW_COMBO_ROW(kernel_format));
 
   GObject *kernel_module_perf = gtk_builder_get_object(builder, "kernel_module_perf");
-  gen_kernel_data.kernel_module_perf_inc_status = adw_switch_row_get_active(ADW_SWITCH_ROW(kernel_module_perf));
-
-  // GObject *build_dialog = gtk_builder_get_object(builder, "build_dialog");
-  // adw_dialog_present(ADW_DIALOG(build_dialog), window);
+  gen_kernel_data.kernel_module_perf_status = adw_switch_row_get_active(ADW_SWITCH_ROW(kernel_module_perf));
   
-  GenKernelData2 gen_kernel_data2;
-  gen_kernel_data2.gen_kernel_data = gen_kernel_data;
-  gen_kernel_data2.build_dialog_data = build_dialog_data;
+  if (!gen_kernel_data2) {
+    gen_kernel_data2 = g_new(GenKernelData2, 1);
+  }
+  gen_kernel_data2->gen_kernel_data = gen_kernel_data;
+  gen_kernel_data2->build_dialog_data = build_dialog_data;
+  gen_kernel_data2->pid = g_new(GPid, 1);
   start_compile_kernel(gen_kernel_data2);
 
-  printf("kvm_inc_status: %d\n", gen_kernel_data.kvm_inc_status);
-  printf("selinux_inc_status: %d\n", gen_kernel_data.selinux_inc_status);
-  printf("aa_inc_status: %d\n", gen_kernel_data.aa_inc_status);
-  printf("kernel_format: %s\n", kernel_out_format_arr[gen_kernel_data.kernel_format]);
-  printf("kernel_module_perf_inc_status: %d\n", gen_kernel_data.kernel_module_perf_inc_status);
+}
 
+static void 
+response_int_cb(AdwDialog* build_alert) {
+  GPid pid = *(gen_kernel_data2->pid);
+  printf("CHILD PID: %i\n", pid);
+  if (kill(pid, SIGINT) == 0) {
+    g_print("Sent SIGTERM to process with PID: %d\n", pid);
+  } else {
+    g_warning("Failed to send SIGTERM to process with PID: %d", pid);
+  }
 }
 
 static void
 on_build_dialog_close(AdwDialog *build_dialog)
 {
-  AdwDialog *build_alert = adw_alert_dialog_new("Процесс нельзя остановить.", NULL);
+  AdwDialog *build_alert = adw_alert_dialog_new("Прервать сборку?", NULL);
   adw_alert_dialog_format_body(ADW_ALERT_DIALOG(build_alert),
-                              "Дождитесь окончания процесса чтобы продолжить");
+                              "Часть прогресса сборки будет сброшена.");
   adw_alert_dialog_add_responses (ADW_ALERT_DIALOG (build_alert),
-                                "ok", "Принять", NULL);
+                                "cancel",  "Отмена",
+                                "interupt", "Прервать", 
+                                NULL);
+  adw_alert_dialog_set_response_appearance (ADW_ALERT_DIALOG (build_alert),
+                                          "interupt",
+                                          ADW_RESPONSE_DESTRUCTIVE);
+  adw_alert_dialog_set_close_response(ADW_ALERT_DIALOG (build_alert), "cancel");
+  g_signal_connect (build_alert, "response::interupt", G_CALLBACK (response_int_cb), NULL);
   adw_dialog_present(build_alert, GTK_WIDGET(build_dialog));
 }
 
 static void
-activate_cb (GtkApplication *app, gpointer user_data)
+activate_cb(GtkApplication *app, gpointer user_data)
 {
   GtkBuilder *builder;
   builder = gtk_builder_new_from_file ("kf.ui");

@@ -6,6 +6,7 @@ typedef struct {
     BuildDialogData *build_dialog_data;
 } OnCompileEndData;
 
+
 gchar* 
 remove_ansi_sequences(const gchar *input) 
 {
@@ -37,6 +38,7 @@ read_output(GIOChannel *channel, GIOCondition condition, gpointer user_data)
     }
     GtkTextView *compilation_view = GTK_TEXT_VIEW(user_data);
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(compilation_view);
+    GtkTextMark *mark;
     GtkTextIter iter;
     gchar *line = NULL;
     gsize length = 0;
@@ -45,12 +47,15 @@ read_output(GIOChannel *channel, GIOCondition condition, gpointer user_data)
     if (g_io_channel_read_line(channel, &line, &length, NULL, NULL) == G_IO_STATUS_NORMAL) {
         // Добавляем строку в GtkTextView
         gtk_text_buffer_get_end_iter(buffer, &iter);
+        printf("%s", line);
         gchar *cleaned_line = remove_ansi_sequences(line);
         gtk_text_buffer_insert(buffer, &iter, cleaned_line, -1);
+        mark = gtk_text_buffer_get_insert(buffer);
+        gtk_text_view_scroll_to_mark(compilation_view, mark, 0.0, TRUE, 0.0, 1.0);
         g_free(cleaned_line);
 
-        // Прокручиваем текст вниз
-        gtk_text_view_scroll_to_iter(compilation_view, &iter, 0.0, FALSE, 0.0, 1.0);
+        // // Прокручиваем текст вниз
+        // gtk_text_view_scroll_to_iter(compilation_view, &iter, 0.0, FALSE, 0.0, 1.0);
     }
 
     g_free(line);
@@ -101,30 +106,29 @@ on_compile_end(GPid pid, gint status, gpointer user_data)
 }
 
 int
-start_compile_kernel(GenKernelData2 gen_kernel_data2) 
+start_compile_kernel(GenKernelData2 *gen_kernel_data2) 
 {   
-    BuildDialogData *build_dialog_data = gen_kernel_data2.build_dialog_data;
-    GenKernelData gen_kernel_data = gen_kernel_data2.gen_kernel_data;
+    BuildDialogData *build_dialog_data = gen_kernel_data2->build_dialog_data;
+    GenKernelData gen_kernel_data = gen_kernel_data2->gen_kernel_data;
 
     GtkBuilder *builder = build_dialog_data->builder;
     GtkWidget *window = GTK_WIDGET(build_dialog_data->window);
     
-
     GObject *build_dialog = gtk_builder_get_object(builder, "build_dialog");
     adw_dialog_present(ADW_DIALOG(build_dialog), window);
 
     GObject *compilation_view = gtk_builder_get_object(builder, "compilation_view");
 
     gchar *command = g_strdup_printf(
-        "./kernel_compiler %i %i %i %i %s",
-        gen_kernel_data.kvm_inc_status,
-        gen_kernel_data.selinux_inc_status,
-        gen_kernel_data.aa_inc_status,
-        gen_kernel_data.kernel_module_perf_inc_status,
-        kernel_out_format_arr[gen_kernel_data.kernel_format]
+        "./kernel_compiler %i %i %i %i %i",
+        gen_kernel_data.virt_status,
+        gen_kernel_data.sec_status,
+        gen_kernel_data.perf_status,
+        gen_kernel_data.kernel_module_perf_status,
+        gen_kernel_data.kernel_format
     );
 
-    GPid pid;
+    GPid *pid = gen_kernel_data2->pid;
     gint stdout_fd, stderr_fd;
     GError *error = NULL;
     gchar **argv = NULL;
@@ -137,7 +141,7 @@ start_compile_kernel(GenKernelData2 gen_kernel_data2)
         G_SPAWN_DO_NOT_REAP_CHILD, // Флаги
         NULL,           // Функция для настройки дочернего процесса
         NULL,           // Данные для функции настройки
-        &pid,           // PID дочернего процесса
+        pid,           // PID дочернего процесса
         NULL,           // stdin (не используем)
         &stdout_fd,     // stdout
         &stderr_fd,     // stderr
@@ -168,7 +172,7 @@ start_compile_kernel(GenKernelData2 gen_kernel_data2)
     on_compile_end_data->build_dialog_data = build_dialog_data;
 
     // Устанавливаем callback для отслеживания завершения процесса
-    g_child_watch_add(pid, on_compile_end, on_compile_end_data);
+    g_child_watch_add(*pid, on_compile_end, on_compile_end_data);
 
     // Освобождаем память
     g_free(command);

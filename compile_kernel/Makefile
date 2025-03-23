@@ -8,7 +8,8 @@ OBJ		  := $(patsubst %.c, $(BUILD_DIR)%.o, $(SRC))
 TRGT	  := kernel_compiler
 
 CFLAGS	  := `pkg-config --cflags glib-2.0`
-LDFLAGS   := `pkg-config --libs glib-2.0`
+CFLAGS	  += -I$(INC_DIR)
+LDFLAGS   := `pkg-config --libs glib-2.0` -lpci
 
 all: install
 
