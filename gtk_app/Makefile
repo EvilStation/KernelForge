@@ -12,6 +12,7 @@ CFLAGS	  += -I$(INC_DIR) -I/usr/include/bpf/uapi
 CFLAGS	  += -Wl, -export-dynamic
 
 LDFLAGS   := `pkg-config --libs libadwaita-1`
+LDFLAGS	  += -lbpf -lelf -lz
 
 all: install
 

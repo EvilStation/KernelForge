@@ -69,9 +69,38 @@ on_build_dialog_close(AdwDialog *build_dialog)
   adw_dialog_present(build_alert, GTK_WIDGET(build_dialog));
 }
 
+static gboolean update_optimization_box(gpointer data) {
+    GtkWidget *optimization_box = (GtkWidget *)data;
+
+    GtkWidget *child;
+    while ((child = gtk_widget_get_first_child(optimization_box)) != NULL) {
+        gtk_box_remove(GTK_BOX(optimization_box), child);
+    }
+
+    struct fs_stat bpf_map[30];
+    if (bpf_get_map(bpf_map, 30) != 0) {
+        printf("Error getting map\n");
+        return G_SOURCE_CONTINUE;
+    }
+
+    for (int i = 0; i < 30; i++) {
+      if (strlen(bpf_map[i].fs) > 0) {
+        char stat_str[64];
+        snprintf(stat_str, sizeof(stat_str), "%llu", bpf_map[i].stat);
+        GtkWidget *fs_label = gtk_label_new(bpf_map[i].fs);
+        GtkWidget *stat_label = gtk_label_new(stat_str);
+        gtk_box_append(GTK_BOX(optimization_box), fs_label);
+        gtk_box_append(GTK_BOX(optimization_box), stat_label);
+      }
+    }
+    return G_SOURCE_CONTINUE;
+}
+
 static void
 activate_cb(GtkApplication *app, gpointer user_data)
-{
+{ 
+  bpf_trace_run();
+
   GtkBuilder *builder;
   builder = gtk_builder_new_from_file ("kf.ui");
 
@@ -110,6 +139,24 @@ activate_cb(GtkApplication *app, gpointer user_data)
 
   GObject *build_dialog = gtk_builder_get_object(builder, "build_dialog");
   g_signal_connect(build_dialog, "close-attempt", G_CALLBACK(on_build_dialog_close), NULL);
+
+  GObject *optimization_box = gtk_builder_get_object(builder, "optimization_box");
+  // struct fs_stat bpf_map[30];
+  // if (bpf_get_map(bpf_map, 30) != 0) {
+  //   printf("Error getting map");
+  // }
+  
+  // for (int i = 0; i < 30; i++) {
+  //   if (strlen(bpf_map[i].fs) > 0) {
+  //     char stat_str[64];
+  //     snprintf(stat_str, sizeof(stat_str), "%llu", bpf_map[i].stat);
+  //     GtkWidget *fs_label = gtk_label_new(bpf_map[i].fs);
+  //     GtkWidget *stat_label = gtk_label_new(stat_str);
+  //     gtk_box_append(GTK_BOX(optimization_box), fs_label);
+  //     gtk_box_append(GTK_BOX(optimization_box), stat_label);
+  //   }
+  // }
+  g_timeout_add(1000, update_optimization_box, optimization_box);
 
   gtk_widget_set_visible (GTK_WIDGET (window), TRUE);
   // g_object_unref (builder);

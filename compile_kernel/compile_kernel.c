@@ -25,6 +25,8 @@ main(int argc, char *argv[], char *envp[]) {
     get_cpu_model();
     get_pci_info();
 
+    enable_config_symbol("MODULE_FORCE_UNLOAD");
+
     fprintf(stdout, "Running make defconfig...\n");
     if (!run_command("make defconfig", "/usr/src/linux")) {
         fprintf(stderr, "Error: make defconfig failed.\n");
@@ -64,17 +66,17 @@ main(int argc, char *argv[], char *envp[]) {
     }
 
     printf("Running make...\n");
-    if (!run_command("make -O", "/usr/src/linux")) {
+    if (!run_command("sh -c \"stdbuf -o0 -e0 yes \\\"\\\" | make\"", "/usr/src/linux")) {
         fprintf(stderr, "Error: make failed.\n");
         return 1;
     } 
     printf("Running make modules_install...\n");
-    if (!run_command("make -O modules_install", "/usr/src/linux")) {
+    if (!run_command("make modules_install", "/usr/src/linux")) {
         fprintf(stderr, "Error: make modules_install failed.\n");
         return 1;
     }
     printf("Running make install...\n");
-    if (!run_command("make -O install", "/usr/src/linux")) {
+    if (!run_command("make install", "/usr/src/linux")) {
         fprintf(stderr, "Error: make install failed.\n");
         return 1;
     } 

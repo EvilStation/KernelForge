@@ -6,7 +6,8 @@
 
 gboolean check_symbol(const gchar *symbol);
 gboolean check_module_db(const gchar *module);
-gboolean run_command(const char *command, const gchar *working_directory);\
+gboolean run_command(const char *command, const gchar *working_directory);
+gboolean run_command_async(const char *command, const gchar *working_directory);
 void enable_config_symbol(const char *symbol);
 void enable_kvm_amd();
 void enable_kvm_intel();

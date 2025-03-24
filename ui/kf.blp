@@ -46,8 +46,12 @@ Adw.ApplicationWindow MainWindow {
         name: "optimization";
         title: "Мониторинг";
         icon-name: "speedometer-symbolic";
-        child: Label {
-          label: "This is Page 2";
+        child: ScrolledWindow {
+          hexpand: true;
+          vexpand: true;
+          Box optimization_box {
+            orientation: vertical;
+          }
         };
       }
 
