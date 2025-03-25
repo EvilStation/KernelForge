@@ -8,6 +8,7 @@
 
 #define PIN_LINK_PATH "/sys/fs/bpf/kf/do_sys_openat2"
 #define PIN_FS_MAP_PATH "/sys/fs/bpf/kf/fs_mount_map"
+#define PIN_RINGBUF_PATH "/sys/fs/bpf/kf/mount_events"
 
 #define MAX_PATH_LEN 128
 
@@ -32,6 +33,7 @@ load_mounts_to_bpf(int map_fd) {
         strncpy(fs_s.fs, fs, sizeof(fs_s.fs));
         strncpy(fs_s.mount_point, mountp, sizeof(fs_s.mount_point));
         fs_s.stat = 0;
+        fs_s.load_status = 1;
         bpf_map_update_elem(map_fd, &i, &fs_s, BPF_ANY);
         ++i;
     }

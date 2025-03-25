@@ -2,6 +2,8 @@
 
 GenKernelData2 *gen_kernel_data2 = NULL;
 
+
+
 static void
 on_kernel_button_clicked(GtkButton *button, GtkStack *stack)
 {
@@ -69,31 +71,52 @@ on_build_dialog_close(AdwDialog *build_dialog)
   adw_dialog_present(build_alert, GTK_WIDGET(build_dialog));
 }
 
+static void
+draw_function(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer data)
+{
+  GdkRGBA color;
+
+  // cairo_arc(cr,
+  //            width / 2.0, height / 2.0,
+  //            MIN (width, height) / 2.0,
+  //            0, 2 * G_PI);
+  cairo_set_line_width (cr, 0.5);
+  cairo_rectangle (cr, 20, 20, 650, 80);
+
+  gtk_widget_get_color(GTK_WIDGET(area), &color);
+  gdk_cairo_set_source_rgba(cr, &color);
+
+  cairo_stroke(cr);
+}
+
+
 static gboolean update_optimization_box(gpointer data) {
-    GtkWidget *optimization_box = (GtkWidget *)data;
-
-    GtkWidget *child;
-    while ((child = gtk_widget_get_first_child(optimization_box)) != NULL) {
-        gtk_box_remove(GTK_BOX(optimization_box), child);
+  GtkWidget *optimization_box = (GtkWidget *)data;
+  GtkWidget *child;
+  while ((child = gtk_widget_get_first_child(optimization_box)) != NULL) {
+      gtk_box_remove(GTK_BOX(optimization_box), child);
+  }
+  struct fs_stat bpf_map[30];
+  if (bpf_get_map(bpf_map, 30) != 0) {
+      printf("Error getting map\n");
+      return G_SOURCE_CONTINUE;
+  }
+  for (int i = 0; i < 30; i++) {
+    if (strlen(bpf_map[i].fs) > 0) {
+      char stat_str[64];
+      snprintf(stat_str, sizeof(stat_str), "%llu", bpf_map[i].stat);
+      GtkWidget *fs_label = gtk_label_new(bpf_map[i].fs);
+      GtkWidget *stat_label = gtk_label_new(stat_str);
+      gtk_box_append(GTK_BOX(optimization_box), fs_label);
+      gtk_box_append(GTK_BOX(optimization_box), stat_label);
+      GtkWidget *area = gtk_drawing_area_new();
+      gtk_drawing_area_set_content_width(GTK_DRAWING_AREA (area), 100);
+      gtk_drawing_area_set_content_height(GTK_DRAWING_AREA (area), 100);
+      gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA (area), draw_function, NULL, NULL);
+      gtk_box_append(GTK_BOX(optimization_box), area);
     }
-
-    struct fs_stat bpf_map[30];
-    if (bpf_get_map(bpf_map, 30) != 0) {
-        printf("Error getting map\n");
-        return G_SOURCE_CONTINUE;
-    }
-
-    for (int i = 0; i < 30; i++) {
-      if (strlen(bpf_map[i].fs) > 0) {
-        char stat_str[64];
-        snprintf(stat_str, sizeof(stat_str), "%llu", bpf_map[i].stat);
-        GtkWidget *fs_label = gtk_label_new(bpf_map[i].fs);
-        GtkWidget *stat_label = gtk_label_new(stat_str);
-        gtk_box_append(GTK_BOX(optimization_box), fs_label);
-        gtk_box_append(GTK_BOX(optimization_box), stat_label);
-      }
-    }
-    return G_SOURCE_CONTINUE;
+  }
+  return G_SOURCE_CONTINUE;
 }
 
 static void
