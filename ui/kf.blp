@@ -21,24 +21,70 @@ Adw.ApplicationWindow MainWindow {
         name: "kernels";
         title: "Система";
         icon-name: "computer-symbolic";
-
-        child: Adw.NavigationSplitView {
-          sidebar: Adw.NavigationPage kernel_sidebar {
-            title: "kernel_sidebar";
-            Box kernel_box {
-              Label {
-                label: "<b>Список ядер</b>";
+        child: Box {
+          orientation: vertical;
+          Picture {
+              file: "gentoo-logo.png";
+              can-shrink: true;
+              margin-top: 12;
+          }
+          Adw.PreferencesPage {
+            Adw.PreferencesGroup {
+              title: "Информация о текущем ядре";
+              margin-top: 12;
+              margin-bottom: 12;
+              margin-start: 12;
+              margin-end: 12;
+              Adw.ActionRow {
+                title: "<b>Версия</b>";
                 use-markup: true;
-                margin-top: 10;
-                margin-bottom: 15;
+                activatable: false;
+                Label {
+                  label: "6.6.58";
+                }
               }
-              orientation: vertical;
+              Adw.ActionRow {
+                title: "<b>Формат ядра</b>";
+                use-markup: true;
+                activatable: false;
+                Label {
+                  label: "UKI";
+                }
+              }
+              Adw.ActionRow {
+                title: "<b>Виртуализация</b>";
+                use-markup: true;
+                activatable: false;
+                Label {
+                  label: "включена";
+                }
+              }
+              Adw.ActionRow {
+                title: "<b>Безопасность</b>";
+                use-markup: true;
+                activatable: false;
+                Label {
+                  label: "включена";
+                }
+              }
+              Adw.ActionRow {
+                title: "<b>Производительность и отладка</b>";
+                use-markup: true;
+                activatable: false;
+                Label {
+                  label: "включена";
+                }
+              }
+              Adw.ActionRow {
+                title: "<b>Возможность мониторинга</b>";
+                use-markup: true;
+                activatable: false;
+                Label {
+                  label: "включена";
+                }
+              }
             }
-          };
-          content: Adw.NavigationPage kernel_content{
-            title: "kernel_content";
-            Adw.ViewStack kernel_stack {}
-          };
+          }
         };
       }
 
@@ -46,11 +92,64 @@ Adw.ApplicationWindow MainWindow {
         name: "optimization";
         title: "Мониторинг";
         icon-name: "speedometer-symbolic";
-        child: ScrolledWindow {
-          hexpand: true;
-          vexpand: true;
-          Box optimization_box {
-            orientation: vertical;
+        child: Box {
+          orientation: vertical;
+          margin-top: 4;
+          margin-start: 4;
+          margin-end: 4;
+          margin-bottom: 4;
+          Adw.ViewSwitcher {
+            stack: optimization_stack;
+          }
+          Adw.ViewStack optimization_stack {
+            Adw.ViewStackPage {
+              name: "fs";
+              title: "Модули ФС";
+              icon-name: "drive-harddisk-symbolic";
+              child: ScrolledWindow {
+                hexpand: true;
+                vexpand: true;
+                Box optimization_box {
+                  orientation: vertical;
+                  Label {
+                    margin-top: 15;
+                    label: "<b>Показатели работы модулей файловых систем</b>";
+                    use-markup: true;
+                  }
+                  Label {
+                    margin-top: 15;
+                    label: "При низких показателях происходит размонтирование и выгрузка модуля. При необходимости его \
+можно загрузить и смонтировать обратно из этой вкладки.";
+                    margin-bottom: 10;
+                    // use-markup: true;
+                  }
+                }
+              };
+            }
+            Adw.ViewStackPage {
+              name: "modules";
+              title: "Прочие модули";
+              icon-name: "emblem-system-symbolic";
+              child: ScrolledWindow {
+                hexpand: true;
+                vexpand: true;
+                Box optimization2_box {
+                  orientation: vertical;
+                  Label {
+                    margin-top: 15;
+                    label: "<b>Прочие модули</b>";
+                    use-markup: true;
+                  }
+                  Label {
+                    margin-top: 15;
+                    label: "При отсутствии активности происходит выгрузка модуля. При необходимости его можно \
+загрузить обратно из этой вкладки.";
+                    margin-bottom: 10;
+                    // use-markup: true;
+                  }
+                }
+              };
+            }
           }
         };
       }
@@ -60,7 +159,6 @@ Adw.ApplicationWindow MainWindow {
         title: "Новое ядро";
         icon-name: "list-add-symbolic";
         child: Adw.PreferencesPage {
-
           
           Adw.PreferencesGroup {
             title: "Компоненты";

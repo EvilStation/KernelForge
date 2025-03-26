@@ -85,11 +85,11 @@ static void draw_single_graph(GtkDrawingArea *area,
     cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
     cairo_set_line_width(cr, 1.0);
     
-    // Ось X (просто линия без подписей)
+    // Ось X
     cairo_move_to(cr, padding, height - padding);
     cairo_line_to(cr, width - padding, height - padding);
     
-    // Ось Y (stat)
+    // Ось Y
     cairo_move_to(cr, padding, height - padding);
     cairo_line_to(cr, padding, padding);
     cairo_stroke(cr);
@@ -107,24 +107,24 @@ static void draw_single_graph(GtkDrawingArea *area,
                  padding - 10);
     cairo_show_text(cr, graph->fs_name);
     
-    // Рисуем сетку и подписи значений stat слева
+    // Рисуем сетку и подписи значений
     cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, 
                          CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 10);
     
     for (int i = 0; i <= 5; i++) {
-        // Горизонтальная линия сетки
         double y = height - padding - (i * available_height / 5);
         
+        // Сетка
         cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
         cairo_move_to(cr, padding, y);
         cairo_line_to(cr, width - padding, y);
         cairo_stroke(cr);
         
-        // Подпись значения stat
+        // Подписи значений
         char label[32];
-        snprintf(label, sizeof(label), "%" G_GUINT64_FORMAT, 
-                (guint64)(graph->max_stat * i / 5));
+        guint64 value = (guint64)(graph->max_stat * i / 5);
+        snprintf(label, sizeof(label), "%" G_GUINT64_FORMAT, value);
         
         cairo_set_source_rgb(cr, 0, 0, 0);
         cairo_text_extents(cr, label, &extents);
@@ -134,11 +134,9 @@ static void draw_single_graph(GtkDrawingArea *area,
         cairo_show_text(cr, label);
     }
     
-    // Рисуем плавную линию графика, соединяющую все точки
+    // Рисуем линию графика
     gdk_cairo_set_source_rgba(cr, &graph->line_color);
     cairo_set_line_width(cr, 2.0);
-    
-    // Начинаем новый путь для линии графика
     cairo_new_path(cr);
     
     // Первая точка
@@ -147,43 +145,36 @@ static void draw_single_graph(GtkDrawingArea *area,
     double y = height - padding - ((double)ts->stat_value / graph->max_stat) * available_height;
     cairo_move_to(cr, x, y);
     
-    // Соединяем все точки линиями
+    // Остальные точки
     for (guint i = 1; i < graph->time_stats->len; i++) {
         ts = &g_array_index(graph->time_stats, TimeStat, i);
         x = padding + ((double)(ts->timestamp - first->timestamp) / time_range) * available_width;
         y = height - padding - ((double)ts->stat_value / graph->max_stat) * available_height;
-        cairo_line_to(cr, x, y);
+        
+        // Проверка на корректность координат
+        if (!isnan(x) && !isnan(y) && isfinite(x) && isfinite(y)) {
+            cairo_line_to(cr, x, y);
+        }
     }
     
-    // Рисуем линию
     cairo_stroke(cr);
     
-    // Рисуем точки поверх линии
+    // Рисуем точки
     for (guint i = 0; i < graph->time_stats->len; i++) {
         ts = &g_array_index(graph->time_stats, TimeStat, i);
         x = padding + ((double)(ts->timestamp - first->timestamp) / time_range) * available_width;
         y = height - padding - ((double)ts->stat_value / graph->max_stat) * available_height;
-    
-        cairo_save(cr);
-        cairo_arc(cr, x, y, 3, 0, 2 * G_PI);
-        gdk_cairo_set_source_rgba(cr, &graph->line_color); // Используем цвет линии
-        cairo_fill(cr); // Только заливка, без обводки
-        cairo_restore(cr);
+
+        if (!isnan(x) && !isnan(y) && isfinite(x) && isfinite(y)) {
+            cairo_save(cr);
+            cairo_arc(cr, x, y, 3, 0, 2 * G_PI);
+            gdk_cairo_set_source_rgba(cr, &graph->line_color);
+            cairo_fill(cr); // Только заливка, без обводки
+            cairo_restore(cr);
+        }
     }
     
-    // Подпись точки монтирования внизу
-    if (graph->mount_point) {
-        cairo_set_source_rgb(cr, 0.4, 0.4, 0.4); // Серый цвет
-        cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, 
-                             CAIRO_FONT_WEIGHT_NORMAL);
-        cairo_set_font_size(cr, 10);
-        
-        cairo_text_extents(cr, graph->mount_point, &extents);
-        cairo_move_to(cr, 
-                     padding + (available_width - extents.width) / 2, 
-                     height - padding + extents.height + 15); // Больший отступ снизу
-        cairo_show_text(cr, graph->mount_point);
-    }
+    // Подпись точки монтирования УДАЛЕНА
 }
 
 // Обработчик нажатия кнопки подключения
@@ -191,11 +182,20 @@ static void on_connect_clicked(GtkButton *button, SingleGraphData *graph) {
     g_print("Connecting filesystem: %s at %s\n", graph->fs_name, graph->mount_point);
     // Здесь должна быть логика подключения файловой системы
     
-    // После подключения скрываем кнопку и показываем график
-    gtk_widget_set_visible(graph->connect_btn, FALSE);
+    // После подключения меняем статус и обновляем интерфейс
+    graph->load_status = 1;
+    
+    // Получаем родительский контейнер кнопки и скрываем его
+    GtkWidget *connect_box = gtk_widget_get_parent(GTK_WIDGET(button));
+    gtk_widget_set_visible(connect_box, FALSE);
+    
+    // Показываем область рисования
     gtk_widget_set_visible(graph->drawing_area, TRUE);
-    //gtk_widget_set_visible(graph->mount_label, TRUE);
+    
+    // Обновляем график
+    gtk_widget_queue_draw(graph->drawing_area);
 }
+
 
 // Обновление или создание графиков
 static void update_all_graphs(MultiGraphManager *manager) {
@@ -236,25 +236,20 @@ static void update_all_graphs(MultiGraphManager *manager) {
             gtk_widget_set_margin_bottom(box, 10);
             gtk_box_append(GTK_BOX(manager->container), box);
             
-            // Метка с точкой монтирования (жирный шрифт)
-            // graph->mount_label = gtk_label_new(graph->mount_point);
-            // PangoAttrList *attrs = pango_attr_list_new();
-            // pango_attr_list_insert(attrs, pango_attr_weight_new(PANGO_WEIGHT_BOLD));
-            // gtk_label_set_attributes(GTK_LABEL(graph->mount_label), attrs);
-            // pango_attr_list_unref(attrs);
-            // gtk_box_append(GTK_BOX(box), graph->mount_label);
-            
-            // Область рисования графика (без рамок и теней)
+            // Область рисования графика
             graph->drawing_area = gtk_drawing_area_new();
             gtk_widget_set_size_request(graph->drawing_area, 600, 200);
             gtk_widget_set_hexpand(graph->drawing_area, TRUE);
             gtk_widget_set_vexpand(graph->drawing_area, TRUE);
             
-            // Чистый стиль без рамок и теней
+            // Стиль области графика
             GtkCssProvider *provider = gtk_css_provider_new();
             gtk_css_provider_load_from_data(provider,
                 ".graph-area {"
                 "   background-color: white;"
+                "   border: 1px solid #d3d3d3;"
+                "   border-radius: 5px;"
+                "   margin: 5px;"
                 "}", -1);
             gtk_style_context_add_provider(gtk_widget_get_style_context(graph->drawing_area),
                                          GTK_STYLE_PROVIDER(provider),
@@ -262,23 +257,44 @@ static void update_all_graphs(MultiGraphManager *manager) {
             gtk_widget_add_css_class(graph->drawing_area, "graph-area");
             gtk_box_append(GTK_BOX(box), graph->drawing_area);
             
-            // Кнопка подключения (чистый стиль)
-            graph->connect_btn = gtk_button_new_with_label("Подключить");
-            gtk_widget_set_margin_top(graph->connect_btn, 5);
-            gtk_widget_set_halign(graph->connect_btn, GTK_ALIGN_CENTER);
-            g_signal_connect(graph->connect_btn, "clicked", 
-                           G_CALLBACK(on_connect_clicked), graph);
-            gtk_box_append(GTK_BOX(box), graph->connect_btn);
-            
-            // Настраиваем видимость элементов
+            // Контейнер для информации о ФС и кнопки (только для неактивных ФС)
             if (graph->load_status == 0) {
-                gtk_widget_set_visible(graph->drawing_area, FALSE);
-                //gtk_widget_set_visible(graph->mount_label, FALSE);
-                gtk_widget_set_visible(graph->connect_btn, TRUE);
-            } else {
-                gtk_widget_set_visible(graph->drawing_area, TRUE);
-                //gtk_widget_set_visible(graph->mount_label, TRUE);
-                gtk_widget_set_visible(graph->connect_btn, FALSE);
+                GtkWidget *connect_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+                gtk_widget_set_margin_top(connect_box, 5);
+                gtk_widget_set_halign(connect_box, GTK_ALIGN_CENTER);
+                
+                // Метка с названием ФС и точкой монтирования
+                GtkWidget *fs_label = gtk_label_new(NULL);
+                gchar *label_text = g_strdup_printf("<b>%s</b> (%s)", 
+                                                  graph->fs_name,
+                                                  graph->mount_point);
+                gtk_label_set_markup(GTK_LABEL(fs_label), label_text);
+                g_free(label_text);
+                gtk_widget_set_margin_end(fs_label, 10);
+                
+                // Стиль метки
+                GtkCssProvider *label_provider = gtk_css_provider_new();
+                gtk_css_provider_load_from_data(label_provider,
+                    ".fs-label {"
+                    "   padding: 5px 10px;"
+                    "   background: #f5f5f5;"
+                    "   border-radius: 5px;"
+                    "}", -1);
+                gtk_style_context_add_provider(gtk_widget_get_style_context(fs_label),
+                                             GTK_STYLE_PROVIDER(label_provider),
+                                             GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+                gtk_widget_add_css_class(fs_label, "fs-label");
+                
+                gtk_box_append(GTK_BOX(connect_box), fs_label);
+                
+                // Кнопка подключения
+                graph->connect_btn = gtk_button_new_with_label("Подключить");
+                gtk_box_append(GTK_BOX(connect_box), graph->connect_btn);
+                g_signal_connect(graph->connect_btn, "clicked", 
+                                G_CALLBACK(on_connect_clicked), graph);
+                
+                // Добавляем контейнер в основной бокс
+                gtk_box_append(GTK_BOX(box), connect_box);
             }
             
             // Настраиваем функцию рисования
@@ -293,6 +309,9 @@ static void update_all_graphs(MultiGraphManager *manager) {
                           graph_colors[g_list_length(manager->graphs) % G_N_ELEMENTS(graph_colors)]);
             
             manager->graphs = g_list_append(manager->graphs, graph);
+            
+            // Начальная видимость элементов
+            gtk_widget_set_visible(graph->drawing_area, graph->load_status != 0);
         }
         
         // Обновляем данные только для активных графиков
@@ -313,6 +332,9 @@ static void update_all_graphs(MultiGraphManager *manager) {
             }
             
             gtk_widget_queue_draw(graph->drawing_area);
+        } else {
+            // Обновляем информацию для неактивных ФС (если нужно)
+            // Можно добавить обновление статистики или другой информации
         }
     }
 }
@@ -419,29 +441,29 @@ activate_cb(GtkApplication *app, gpointer user_data)
   GObject *window = gtk_builder_get_object (builder, "MainWindow");
   gtk_window_set_application (GTK_WINDOW (window), app);
 
-  GObject *kernel_box = gtk_builder_get_object(builder, "kernel_box");
-  GObject *kernel_stack = gtk_builder_get_object(builder, "kernel_stack");
+  // GObject *kernel_box = gtk_builder_get_object(builder, "kernel_box");
+  // GObject *kernel_stack = gtk_builder_get_object(builder, "kernel_stack");
 
-  int count = 0;
-  char** kernels_arr;
-  kernels_arr = get_kernels_files_arr(&count);
-  for (int i = 0; i < count; i++) {
-    GtkWidget *kernel_page = gtk_label_new(kernels_arr[i]);
-    GtkWidget *kernel_button = gtk_button_new_with_label(g_path_get_basename(kernels_arr[i]));
-    gtk_widget_set_margin_top(kernel_button, 2);
-    gtk_widget_set_margin_start(kernel_button, 7);
-    gtk_widget_set_margin_end(kernel_button, 7);
+  // int count = 0;
+  // char** kernels_arr;
+  // kernels_arr = get_kernels_files_arr(&count);
+  // for (int i = 0; i < count; i++) {
+  //   GtkWidget *kernel_page = gtk_label_new(kernels_arr[i]);
+  //   GtkWidget *kernel_button = gtk_button_new_with_label(g_path_get_basename(kernels_arr[i]));
+  //   gtk_widget_set_margin_top(kernel_button, 2);
+  //   gtk_widget_set_margin_start(kernel_button, 7);
+  //   gtk_widget_set_margin_end(kernel_button, 7);
 
-    char *page_name = g_strdup_printf("page%d", i);
-    g_object_set_data(G_OBJECT(kernel_button), "page-name", page_name);
-    g_signal_connect(kernel_button, "clicked", G_CALLBACK(on_kernel_button_clicked), kernel_stack);
+  //   char *page_name = g_strdup_printf("page%d", i);
+  //   g_object_set_data(G_OBJECT(kernel_button), "page-name", page_name);
+  //   g_signal_connect(kernel_button, "clicked", G_CALLBACK(on_kernel_button_clicked), kernel_stack);
 
-    gtk_box_append(GTK_BOX(kernel_box), kernel_button);
-    adw_view_stack_add_titled(ADW_VIEW_STACK(kernel_stack), kernel_page, page_name, g_path_get_basename(kernels_arr[i]));
+  //   gtk_box_append(GTK_BOX(kernel_box), kernel_button);
+  //   adw_view_stack_add_titled(ADW_VIEW_STACK(kernel_stack), kernel_page, page_name, g_path_get_basename(kernels_arr[i]));
 
-    free(kernels_arr[i]);
-  }
-  free(kernels_arr);
+  //   free(kernels_arr[i]);
+  // }
+  // free(kernels_arr);
   
   GObject *start_button = gtk_builder_get_object(builder, "start_button");
   BuildDialogData *build_dialog_data = g_new(BuildDialogData, 1);
@@ -473,7 +495,7 @@ activate_cb(GtkApplication *app, gpointer user_data)
   // }
   // g_timeout_add(1000, update_optimization_box, optimization_box);
 
-  gtk_widget_set_visible (GTK_WIDGET (window), TRUE);
+  gtk_widget_set_visible(GTK_WIDGET(window), TRUE);
   // g_object_unref (builder);
 }
 
