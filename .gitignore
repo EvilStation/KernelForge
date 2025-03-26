@@ -3,6 +3,7 @@
 /bpf_loader
 /kernel_compiler
 /KernelForge
+/fs_monitor_daemon
 /kf.ui
 /include/bpf_trace.skel.h
 /include/vmlinux.h
