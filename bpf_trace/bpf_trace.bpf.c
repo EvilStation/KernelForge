@@ -8,10 +8,20 @@
 
 struct {
     __uint(type, BPF_MAP_TYPE_ARRAY);
-    __uint(max_entries, 30);         // Максимальное количество элементов в массиве
-    __type(key, int);                // Ключ для массива (обычно индекс)
-    __type(value, struct fs_stat);  // Значение — структура fs_stat
+    __uint(max_entries, 30);
+    __type(key, int);
+    __type(value, struct fs_stat);
 } fs_mount_map SEC(".maps");
+struct {
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __uint(max_entries, 50);
+    __type(key, int);
+    __type(value, struct mod_stat);
+} modules_load_status_map SEC(".maps");
+struct {
+    __uint(type, BPF_MAP_TYPE_RINGBUF);
+    __uint(max_entries, 1 << 20);
+} mount_events SEC(".maps");
 
 static __always_inline int starts_with(const char cs[64], const char ct[64])
 {
@@ -53,6 +63,13 @@ monitor_openat2(struct pt_regs *ctx) {
         if (!value || value->fs[0] == '\0' || value->mount_point[0] == '\0') 
             continue;
         if (starts_with(filename_buff, value->mount_point)) {
+            if (value->load_status == 0) {
+                int *event = bpf_ringbuf_reserve(&mount_events, sizeof(int), 0);
+                if (event) {
+                    *event = idx;
+                    bpf_ringbuf_submit(event, 0);
+                }
+            }
             value->stat++;
             bpf_map_update_elem(&fs_mount_map, &idx, value, BPF_ANY);
         }

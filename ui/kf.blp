@@ -23,15 +23,15 @@ Adw.ApplicationWindow MainWindow {
         icon-name: "computer-symbolic";
         child: Box {
           orientation: vertical;
-          Picture {
-              file: "gentoo-logo.png";
-              can-shrink: true;
+          Image {
+              file: "logo/gentoo-logo.png";
+              width-request: 110;
+              height-request: 110;
               margin-top: 12;
           }
           Adw.PreferencesPage {
             Adw.PreferencesGroup {
               title: "Информация о текущем ядре";
-              margin-top: 12;
               margin-bottom: 12;
               margin-start: 12;
               margin-end: 12;
@@ -146,6 +146,22 @@ Adw.ApplicationWindow MainWindow {
 загрузить обратно из этой вкладки.";
                     margin-bottom: 10;
                     // use-markup: true;
+                  }
+                  Adw.PreferencesPage {
+                    Adw.PreferencesGroup {
+                      Adw.ActionRow {
+                        title: "<b>Модуль</b>";
+                        use-markup: true;
+                        activatable: false;
+                        Label {
+                          label: "<b>Обращения</b>";
+                          use-markup: true;
+                        }
+                      }
+                    }
+                    Adw.PreferencesGroup optimization2_pref_group {
+                      
+                    }
                   }
                 }
               };

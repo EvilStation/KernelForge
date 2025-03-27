@@ -1,8 +1,8 @@
 .PHONY: all install clean
 
 UI_C	:= blueprint-compiler
-SRC		:= kf.blp
-TRGT 	:= kf.ui
+SRC		:= $(wildcard *.blp)
+TRGT    := $(patsubst %.blp, %.ui, $(SRC))
 
 all: install
 
@@ -10,7 +10,7 @@ all: install
 	$(UI_C) compile $^ > $@
 
 install: $(TRGT)
-	mv $^ ../$^
+	@for target in $^; do mv $$target ../$$target; done
 
 clean:
 	rm -f $(TRGT)

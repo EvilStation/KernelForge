@@ -13,12 +13,12 @@ void bpf_trace_run () {
     }
 }
 
-int bpf_get_map(struct fs_stat *bpf_map, int size) {
+int bpf_get_fs_stat_map(struct fs_stat *bpf_map, int size) {
     if (!bpf_map) {
         fprintf(stderr, "Error: bpf_map is NULL\n");
         return -1;
     }
-    int map_fd = bpf_obj_get(PIN_MAP_PATH);
+    int map_fd = bpf_obj_get(PIN_FS_MAP_PATH);
     if (map_fd < 0) {
         perror("Error getting Bpf map");
         return -1;
@@ -26,6 +26,32 @@ int bpf_get_map(struct fs_stat *bpf_map, int size) {
 
     for (int i = 0; i < size; i++) {
         struct fs_stat value;
+        if (bpf_map_lookup_elem(map_fd, &i, &value) == 0) {
+            bpf_map[i] = value;
+        } else {
+            perror("Failed to lookup element in BPF map");
+            close(map_fd);
+            return -1;
+        }
+    }
+
+    close(map_fd);
+    return 0;
+}
+
+int bpf_get_modules_stat_map(struct mod_stat *bpf_map, int size) {
+    if (!bpf_map) {
+        fprintf(stderr, "Error: bpf_map is NULL\n");
+        return -1;
+    }
+    int map_fd = bpf_obj_get(PIN_MODULES_LOAD_STATUS_MAP_PATH);
+    if (map_fd < 0) {
+        perror("Error getting Bpf map");
+        return -1;
+    }
+
+    for (int i = 0; i < size; i++) {
+        struct mod_stat value;
         if (bpf_map_lookup_elem(map_fd, &i, &value) == 0) {
             bpf_map[i] = value;
         } else {

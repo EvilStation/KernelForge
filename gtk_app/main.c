@@ -200,7 +200,7 @@ static void on_connect_clicked(GtkButton *button, SingleGraphData *graph) {
 // Обновление или создание графиков
 static void update_all_graphs(MultiGraphManager *manager) {
     struct fs_stat new_stats[30];
-    if (bpf_get_map(new_stats, 30) != 0) {
+    if (bpf_get_fs_stat_map(new_stats, 30) != 0) {
         g_warning("Failed to get BPF map data");
         return;
     }
@@ -440,30 +440,6 @@ activate_cb(GtkApplication *app, gpointer user_data)
 
   GObject *window = gtk_builder_get_object (builder, "MainWindow");
   gtk_window_set_application (GTK_WINDOW (window), app);
-
-  // GObject *kernel_box = gtk_builder_get_object(builder, "kernel_box");
-  // GObject *kernel_stack = gtk_builder_get_object(builder, "kernel_stack");
-
-  // int count = 0;
-  // char** kernels_arr;
-  // kernels_arr = get_kernels_files_arr(&count);
-  // for (int i = 0; i < count; i++) {
-  //   GtkWidget *kernel_page = gtk_label_new(kernels_arr[i]);
-  //   GtkWidget *kernel_button = gtk_button_new_with_label(g_path_get_basename(kernels_arr[i]));
-  //   gtk_widget_set_margin_top(kernel_button, 2);
-  //   gtk_widget_set_margin_start(kernel_button, 7);
-  //   gtk_widget_set_margin_end(kernel_button, 7);
-
-  //   char *page_name = g_strdup_printf("page%d", i);
-  //   g_object_set_data(G_OBJECT(kernel_button), "page-name", page_name);
-  //   g_signal_connect(kernel_button, "clicked", G_CALLBACK(on_kernel_button_clicked), kernel_stack);
-
-  //   gtk_box_append(GTK_BOX(kernel_box), kernel_button);
-  //   adw_view_stack_add_titled(ADW_VIEW_STACK(kernel_stack), kernel_page, page_name, g_path_get_basename(kernels_arr[i]));
-
-  //   free(kernels_arr[i]);
-  // }
-  // free(kernels_arr);
   
   GObject *start_button = gtk_builder_get_object(builder, "start_button");
   BuildDialogData *build_dialog_data = g_new(BuildDialogData, 1);
@@ -478,22 +454,31 @@ activate_cb(GtkApplication *app, gpointer user_data)
   MultiGraphManager *manager = setup_graphs_container(GTK_WIDGET(optimization_box));
   g_object_set_data_full(G_OBJECT(optimization_box), "graph-manager", 
                          manager, free_graph_manager);
-  // struct fs_stat bpf_map[30];
-  // if (bpf_get_map(bpf_map, 30) != 0) {
-  //   printf("Error getting map");
-  // }
-  
-  // for (int i = 0; i < 30; i++) {
-  //   if (strlen(bpf_map[i].fs) > 0) {
-  //     char stat_str[64];
-  //     snprintf(stat_str, sizeof(stat_str), "%llu", bpf_map[i].stat);
-  //     GtkWidget *fs_label = gtk_label_new(bpf_map[i].fs);
-  //     GtkWidget *stat_label = gtk_label_new(stat_str);
-  //     gtk_box_append(GTK_BOX(optimization_box), fs_label);
-  //     gtk_box_append(GTK_BOX(optimization_box), stat_label);
-  //   }
-  // }
-  // g_timeout_add(1000, update_optimization_box, optimization_box);
+
+  GObject *optimization2_pref_group = gtk_builder_get_object(builder, "optimization2_pref_group");
+  struct mod_stat mod_stats[50];
+  if (bpf_get_modules_stat_map(mod_stats, 50) != 0) {
+      g_warning("Failed to get BPF map data");
+      return;
+  }
+  for (int i = 0; i < 50; i++) {
+    if (strlen(mod_stats[i].mod) > 0) {
+        GtkWidget *action_row = adw_action_row_new();
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(action_row), mod_stats[i].mod);
+        char *stat_str = g_strdup_printf("%llu", mod_stats[i].stat);
+
+        if (mod_stats[i].load_status == 1) {
+            adw_action_row_set_subtitle(ADW_ACTION_ROW(action_row), "Модуль выключен");
+            GtkWidget *load_button = gtk_button_new();
+            gtk_button_set_label(GTK_BUTTON(load_button), "включить");
+            adw_action_row_add_suffix(ADW_ACTION_ROW(action_row), load_button);
+        }
+
+        GtkWidget *mod_stat = gtk_label_new(stat_str);
+        adw_action_row_add_suffix(ADW_ACTION_ROW(action_row), mod_stat);
+        adw_preferences_group_add(ADW_PREFERENCES_GROUP(optimization2_pref_group), action_row);
+    }
+  }
 
   gtk_widget_set_visible(GTK_WIDGET(window), TRUE);
   // g_object_unref (builder);
