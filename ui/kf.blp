@@ -19,7 +19,7 @@ Adw.ApplicationWindow MainWindow {
 
       Adw.ViewStackPage {
         name: "kernels";
-        title: "Система";
+        title: "Ядро";
         icon-name: "computer-symbolic";
         child: Box {
           orientation: vertical;
@@ -56,7 +56,7 @@ Adw.ApplicationWindow MainWindow {
                 use-markup: true;
                 activatable: false;
                 Label {
-                  label: "включена";
+                  label: "отключена";
                 }
               }
               Adw.ActionRow {
@@ -64,15 +64,15 @@ Adw.ApplicationWindow MainWindow {
                 use-markup: true;
                 activatable: false;
                 Label {
-                  label: "включена";
+                  label: "отключена";
                 }
               }
               Adw.ActionRow {
-                title: "<b>Производительность и отладка</b>";
+                title: "<b>Отладка</b>";
                 use-markup: true;
                 activatable: false;
                 Label {
-                  label: "включена";
+                  label: "отключена";
                 }
               }
               Adw.ActionRow {
@@ -128,7 +128,7 @@ Adw.ApplicationWindow MainWindow {
             }
             Adw.ViewStackPage {
               name: "modules";
-              title: "Прочие модули";
+              title: "Все модули";
               icon-name: "emblem-system-symbolic";
               child: ScrolledWindow {
                 hexpand: true;
@@ -137,7 +137,7 @@ Adw.ApplicationWindow MainWindow {
                   orientation: vertical;
                   Label {
                     margin-top: 15;
-                    label: "<b>Прочие модули</b>";
+                    label: "<b>Все модули ядра</b>";
                     use-markup: true;
                   }
                   Label {
@@ -186,7 +186,7 @@ Adw.ApplicationWindow MainWindow {
               label: "Безопасность";
             }
             CheckButton perf_check_button {
-              label: "Производительность и отладка";
+              label: "Отладка";
             }
           }
 
@@ -217,6 +217,47 @@ Adw.ApplicationWindow MainWindow {
           }
         };
       }
+      Adw.ViewStackPage {
+        name: "backup";
+        title: "Резервные копии";
+        icon-name: "emblem-shared-symbolic";
+        child: Box {
+          orientation: vertical;
+          Adw.PreferencesPage {
+            Adw.PreferencesGroup {
+              title: "Резервные копии конфигураций ядра";
+              description: "Востановление резервной копии приведет к перезаписи текущего файла конфигурации";
+              margin-bottom: 12;
+              margin-start: 12;
+              margin-end: 12;
+              Adw.ActionRow {
+                title: "<b>Текущая конфигурация</b>";
+                use-markup: true;
+                activatable: false;
+                Button {
+                  label: "Сохранить";
+                }
+              }
+              Adw.ActionRow {
+                title: "2025-03-16 12:55:19";
+                use-markup: true;
+                activatable: false;
+                Button {
+                  label: "Загрузить";
+                }
+              }
+              Adw.ActionRow {
+                title: "2025-03-16 13:01:42";
+                use-markup: true;
+                activatable: false;
+                Button {
+                  label: "Загрузить";
+                }
+              }
+            }
+          }
+        };
+      }
     }
   }
 }
@@ -240,7 +281,7 @@ Adw.Dialog build_dialog {
 
       ProgressBar {
         name: "build_progress";
-        fraction: 0.0;
+        fraction: 0.15;
       }
       ScrolledWindow {
         hexpand: true;
